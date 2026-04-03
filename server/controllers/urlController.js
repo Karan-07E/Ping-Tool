@@ -6,7 +6,7 @@ import Url from '../models/Url.js';
 function isValidUrl(str) {
   try {
     const url = new URL(str);
-    return url.protocol === 'https:';
+    return url.protocol === 'https:' || url.protocol === 'http:';
   } catch {
     return false;
   }
