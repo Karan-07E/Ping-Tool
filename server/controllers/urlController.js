@@ -6,7 +6,7 @@ import Url from '../models/Url.js';
 function isValidUrl(str) {
   try {
     const url = new URL(str);
-    return url.protocol === 'https:' || url.protocol === 'http:';
+    return url.protocol === 'https:'
   } catch {
     return false;
   }
@@ -24,7 +24,7 @@ export const addUrl = async (req, res) => {
     }
 
     if (!isValidUrl(url)) {
-      return res.status(400).json({ error: 'Invalid URL. Must start with http:// or https://' });
+      return res.status(400).json({ error: 'Invalid URL. Must start with https://' });
     }
 
     // Check for duplicates
