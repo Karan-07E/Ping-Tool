@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import UrlCard from './UrlCard.jsx';
+import API_BASE from '../config/api.js';
 
 const REFRESH_INTERVAL = 20_000; // 20 seconds
 
@@ -8,7 +9,7 @@ export default function UrlList({ urls, setUrls }) {
 
   const fetchUrls = useCallback(async () => {
     try {
-      const res = await fetch('/api/url');
+      const res = await fetch(`${API_BASE}/api/url`);
       if (res.ok) {
         const data = await res.json();
         setUrls(data);
@@ -42,7 +43,9 @@ export default function UrlList({ urls, setUrls }) {
 
   const upCount = urls.filter((u) => u.status === 'UP').length;
   const downCount = urls.filter((u) => u.status === 'DOWN').length;
-  const pendingCount = urls.filter((u) => u.status === 'PENDING' || !u.status).length;
+  const pendingCount = urls.filter(
+    (u) => u.status === 'PENDING' || !u.status
+  ).length;
 
   return (
     <div className="url-list">
@@ -85,8 +88,12 @@ export default function UrlList({ urls, setUrls }) {
       {urls.length === 0 ? (
         <div className="url-list__empty">
           <div className="url-list__empty-icon">📡</div>
-          <p className="url-list__empty-text">No URLs being monitored yet</p>
-          <p className="url-list__empty-hint">Add a URL above to start tracking its uptime</p>
+          <p className="url-list__empty-text">
+            No URLs being monitored yet
+          </p>
+          <p className="url-list__empty-hint">
+            Add a URL above to start tracking its uptime
+          </p>
         </div>
       ) : (
         <div className="url-list__grid">

@@ -19,7 +19,7 @@ export default function App() {
           <h1 className="header__title">PingWatch</h1>
         </div>
         <p className="header__subtitle">
-          Monitor your URLs · Keep your services alive
+          Uptime monitoring for your services — never miss a downtime event
         </p>
       </header>
 
@@ -28,6 +28,13 @@ export default function App() {
 
       {/* URL List */}
       <UrlList urls={urls} setUrls={setUrls} />
+
+      {/* Footer */}
+      <footer className="footer">
+        <p className="footer__text">
+          PingWatch v1.0 — Built by Karan M — Pings every 1 minute
+        </p>
+      </footer>
     </div>
   );
 }

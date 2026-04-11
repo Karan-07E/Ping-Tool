@@ -1,4 +1,5 @@
 import Url from '../models/Url.js';
+import PingHistory from '../models/PingHistory.js';
 
 /**
  * Validates that a string is a well-formed HTTP/HTTPS URL.
@@ -6,7 +7,7 @@ import Url from '../models/Url.js';
 function isValidUrl(str) {
   try {
     const url = new URL(str);
-    return url.protocol === 'https:'
+    return url.protocol === 'http:' || url.protocol === 'https:';
   } catch {
     return false;
   }
@@ -24,13 +25,17 @@ export const addUrl = async (req, res) => {
     }
 
     if (!isValidUrl(url)) {
-      return res.status(400).json({ error: 'Invalid URL. Must start with https://' });
+      return res
+        .status(400)
+        .json({ error: 'Invalid URL. Must start with http:// or https://' });
     }
 
     // Check for duplicates
     const existing = await Url.findOne({ url });
     if (existing) {
-      return res.status(409).json({ error: 'This URL is already being monitored' });
+      return res
+        .status(409)
+        .json({ error: 'This URL is already being monitored' });
     }
 
     const newUrl = await Url.create({ url });
@@ -55,7 +60,7 @@ export const getUrls = async (_req, res) => {
 };
 
 /**
- * DELETE /api/url/:id — Remove a monitored URL
+ * DELETE /api/url/:id — Remove a monitored URL and its history
  */
 export const deleteUrl = async (req, res) => {
   try {
@@ -66,9 +71,34 @@ export const deleteUrl = async (req, res) => {
       return res.status(404).json({ error: 'URL not found' });
     }
 
+    // Also remove associated ping history
+    PingHistory.deleteMany({ urlId: id }).catch((err) => {
+      console.error('Failed to delete ping history:', err.message);
+    });
+
     res.json({ message: 'URL deleted successfully', id });
   } catch (error) {
     console.error('Error deleting URL:', error.message);
     res.status(500).json({ error: 'Failed to delete URL' });
+  }
+};
+
+/**
+ * GET /api/url/:id/history — Get recent ping history for a URL
+ */
+export const getUrlHistory = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const limit = parseInt(req.query.limit) || 50;
+
+    const history = await PingHistory.find({ urlId: id })
+      .sort({ checkedAt: -1 })
+      .limit(limit)
+      .lean();
+
+    res.json(history);
+  } catch (error) {
+    console.error('Error fetching URL history:', error.message);
+    res.status(500).json({ error: 'Failed to fetch history' });
   }
 };

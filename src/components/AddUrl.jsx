@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import API_BASE from '../config/api.js';
 
 export default function AddUrl({ onUrlAdded }) {
   const [url, setUrl] = useState('');
@@ -27,7 +28,7 @@ export default function AddUrl({ onUrlAdded }) {
     setLoading(true);
 
     try {
-      const res = await fetch('/api/url', {
+      const res = await fetch(`${API_BASE}/api/url`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: trimmed }),
@@ -71,7 +72,7 @@ export default function AddUrl({ onUrlAdded }) {
           className="add-url__btn"
           disabled={loading || !url.trim()}
         >
-          {loading ? 'Adding…' : 'Monitor'}
+          {loading ? 'Adding…' : '+ Monitor'}
         </button>
       </form>
       {error && <div className="add-url__error">{error}</div>}

@@ -21,6 +21,18 @@ const urlSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    uptimePercent: {
+      type: Number,
+      default: null,
+    },
+    totalChecks: {
+      type: Number,
+      default: 0,
+    },
+    successfulChecks: {
+      type: Number,
+      default: 0,
+    },
   },
   { timestamps: true }
 );

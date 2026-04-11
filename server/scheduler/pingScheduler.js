@@ -1,75 +1,33 @@
 import cron from 'node-cron';
-import axios from 'axios';
-import Url from '../models/Url.js';
-
-const TIMEOUT_MS = 5000;
+import { runPingCycle } from '../services/pingService.js';
 
 /**
- * Ping a single URL and update its record in the database.
- */
-async function pingUrl(urlDoc) {
-  const start = Date.now();
-
-  try {
-    await axios.get(urlDoc.url, {
-      timeout: TIMEOUT_MS,
-      // Don't follow too many redirects
-      maxRedirects: 5,
-      // Accept any status to differentiate from network errors
-      validateStatus: (status) => status < 500,
-    });
-
-    const responseTime = Date.now() - start;
-
-    urlDoc.status = 'UP';
-    urlDoc.responseTime = responseTime;
-    urlDoc.lastChecked = new Date();
-  } catch (error) {
-    const responseTime = Date.now() - start;
-
-    urlDoc.status = 'DOWN';
-    urlDoc.responseTime = responseTime;
-    urlDoc.lastChecked = new Date();
-
-    console.warn(`⚠️  ${urlDoc.url} is DOWN — ${error.message}`);
-  }
-
-  await urlDoc.save();
-}
-
-/**
- * Ping all monitored URLs in parallel.
- */
-async function pingAllUrls() {
-  const urls = await Url.find();
-
-  if (urls.length === 0) {
-    console.log('📭 No URLs to ping.');
-    return;
-  }
-
-  console.log(`🔄 Pinging ${urls.length} URL(s)...`);
-
-  await Promise.all(urls.map((urlDoc) => pingUrl(urlDoc)));
-
-  console.log('Ping cycle complete.');
-}
-
-/**
- * Start the cron scheduler — runs every 10 minutes.
- * Also performs an initial ping on startup.
+ * Start the in-process cron scheduler.
+ *
+ * This is a BACKUP mechanism. The primary trigger should be an external
+ * cron service hitting POST /api/ping-all every 10 minutes.
+ *
+ * Why external cron is preferred:
+ * - Render/Railway free tiers put services to sleep after inactivity.
+ * - When the server sleeps, setInterval/node-cron stop running.
+ * - An external cron (cron-job.org, UptimeRobot, Cronitor) wakes the
+ *   server with an HTTP request AND triggers the ping cycle in one shot.
  */
 export function startScheduler() {
-  // Initial ping on startup
-  console.log('Running initial ping cycle...');
-  pingAllUrls();
-
-  // Schedule every 1 minutes
-  cron.schedule('*/1 * * * *', () => {
-    console.log(`\n [${new Date().toISOString()}] Scheduled ping cycle`);
-    pingAllUrls();
+  // Run an initial ping on startup
+  console.log('🚀 Running initial ping cycle on startup...');
+  runPingCycle().catch((err) => {
+    console.error('Initial ping cycle failed:', err.message);
   });
 
-  console.log('Scheduler active — pinging every 10 minutes.');
+  // Schedule every 1 minutes as a fallback
+  cron.schedule('*/1 * * * *', () => {
+    console.log(`\n⏰ [${new Date().toISOString()}] Scheduled ping cycle (node-cron)`);
+    runPingCycle().catch((err) => {
+      console.error('Scheduled ping cycle failed:', err.message);
+    });
+  });
+
+  console.log('📅 Scheduler active — fallback cron every 10 minutes.');
+  console.log('💡 For production: configure cron-job.org to POST /api/ping-all every 10 min.');
 }
- 
